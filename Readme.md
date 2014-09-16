@@ -87,7 +87,7 @@ optional arguments.
 
 ### Via Cargo
 
-The package name is `kwargs`.
+The package name is `kwarg`.
 
 ## License
 
