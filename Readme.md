@@ -1,5 +1,7 @@
 # Keyword arguments for Rust
 
+[![Build Status](https://travis-ci.org/SiegeLord/Kwarg.svg)](https://travis-ci.org/SiegeLord/Kwarg)
+
 This crate provides a procedural macro that allows you to generate macro 
 wrappers around your functions which support keyword and default arguments.
 
