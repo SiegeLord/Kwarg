@@ -83,6 +83,12 @@ function_name '(' [required_arg_name | optional_arg_name '=' initializer_expr ]*
 When invoking the generated macro, positional arguments must come before the 
 optional arguments.
 
+## Installation
+
+### Via Cargo
+
+The package name is `kwargs`.
+
 ## License
 
 LGPL 3.0
