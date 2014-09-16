@@ -7,7 +7,7 @@ wrappers around your functions which support keyword and default arguments.
 
 ## Example
 
-Within a simple crate, using this macro is as easy as this:
+Within a single crate, using this macro is as easy as this:
 
 ```rust
 #![feature(phase)]
