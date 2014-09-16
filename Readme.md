@@ -59,7 +59,7 @@ pub fn foo(a: int, b: Option<int>, c: Option<int>) -> (int, Option<int>, Option<
 
 #[phase(plugin)]
 extern crate kwarg_macros;
-#[phase(plugin)]
+#[phase(plugin, link)]
 extern crate library;
 
 library_kwargs!()
