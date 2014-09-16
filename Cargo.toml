@@ -1,6 +1,6 @@
 [package]
 
-name = "kwargs"
+name = "kwarg"
 version = "0.0.0"
 authors = [ "SiegeLord <slabode@aim.com>" ]
 
