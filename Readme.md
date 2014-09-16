@@ -77,7 +77,17 @@ fn main()
 The general syntax is as follows:
 
 ```
-function_name '(' [required_arg_name | optional_arg_name '=' initializer_expr ]* ')'
+function_name '(' [required_arg_name | optional_arg_name '=' initializer_expr ],* ')'
+```
+
+E.g.
+
+```rust
+kwarg_decl!{function_name(req_arg1, req_arg2, opt_arg1 = 1, opt_arg2 = 2)}
+
+// ...
+
+function_name!(1, opt_arg1 = 2, req_arg2 = 2); // `req_arg1` is set positionally, `opt_arg2` remains at default
 ```
 
 When invoking the generated macro, positional arguments must come before the 
