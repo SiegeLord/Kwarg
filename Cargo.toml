@@ -1,0 +1,16 @@
+[package]
+
+name = "kwargs"
+version = "0.0.0"
+authors = [ "SiegeLord <slabode@aim.com>" ]
+
+[lib]
+
+name = "kwarg_macros"
+path = "src/lib.rs"
+plugin = true
+
+[[test]]
+
+name = "test"
+path = "src/test.rs"
