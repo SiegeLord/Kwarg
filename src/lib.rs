@@ -39,7 +39,7 @@ impl MacResult for KWargHelper
 	fn make_def(&mut self) -> Option<MacroDef>
 	{
 		Some(MacroDef{ name: self.name.as_str().to_string(), ext: NormalTT(box self.clone(), None)})
-    }
+	}
 
 	fn make_stmt(self: Box<KWargHelper>) -> Option<P<ast::Stmt>>
 	{
