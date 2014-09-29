@@ -235,6 +235,11 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 				}
 			}
 		}
+		Some(tt) =>
+		{
+			cx.span_err(get_first_span_from_tt(tt).unwrap_or(sp), "expected identifier as an argument");
+			return DummyResult::any(sp);
+		}
 		_ =>
 		{
 			cx.span_err(sp, "expected identifier as an argument");
