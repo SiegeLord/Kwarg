@@ -221,13 +221,13 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 {
 	let mut tts = tts.iter();
 
-	let name = match tts.next()
+	let (name, name_span) = match tts.next()
 	{
 		Some(&ast::TTTok(sp, ref tok)) =>
 		{
 			match *tok
 			{
-				token::IDENT(ref ident, _) => ident.clone(),
+				token::IDENT(ref ident, _) => (ident.clone(), sp),
 				_ =>
 				{
 					cx.span_err(sp, "expected identifier as an argument");
@@ -270,11 +270,8 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 						}
 					}
 				}
-				_ =>
-				{
-					cx.span_err(sp, "expected '('");
-					return DummyResult::any(sp);
-				}
+				/* TTDelim always has a opening delimeter */
+				_ => unreachable!()
 			}
 
 			loop
@@ -294,9 +291,9 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 							}
 						}
 					}
-					Some(_) =>
+					Some(tt) =>
 					{
-						cx.span_err(sp, "expected a sequence of `arg_name` or `arg_name = default_expr`");
+						cx.span_err(get_first_span_from_tt(tt).unwrap_or(sp), "expected a sequence of `arg_name` or `arg_name = default_expr`");
 						return DummyResult::any(sp);
 					}
 					None => break
@@ -348,9 +345,14 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 				}
 			}
 		}
+		Some(tt) =>
+		{
+			cx.span_err(get_first_span_from_tt(tt).unwrap_or(sp), "expected a set of delimited arguments after the function name");
+			return DummyResult::any(sp);
+		}
 		_ =>
 		{
-			cx.span_err(sp, "expected a set of delimited arguments for `kwarg_decl``");
+			cx.span_err(name_span, "expected a set of delimited arguments after the function name");
 			return DummyResult::any(sp);
 		}
 	}
