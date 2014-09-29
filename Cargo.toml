@@ -1,6 +1,6 @@
 [package]
 
-name = "kwarg"
+name = "kwarg_macros"
 version = "0.0.0"
 authors = [ "SiegeLord <slabode@aim.com>" ]
 

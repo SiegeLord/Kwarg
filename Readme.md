@@ -98,7 +98,7 @@ optional arguments.
 ### Via Cargo
 
 ```
-[dependencies.kwarg]
+[dependencies.kwarg_macros]
 
 git = "https://github.com/SiegeLord/Kwarg.git"
 ```
