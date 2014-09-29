@@ -89,10 +89,12 @@ impl TTMacroExpander for KWargHelper
 
 		'arg_list_loop: loop
 		{
+			let mut eq_span = sp;
 			let arg_idx = match (tts.cur_tt, tts.next_tt)
 			{
-				(Some(&ast::TTTok(sp1, token::IDENT(ref ident, _))), Some(&ast::TTTok(_, token::EQ))) =>
+				(Some(&ast::TTTok(sp1, token::IDENT(ref ident, _))), Some(&ast::TTTok(sp2, token::EQ))) =>
 				{
+					eq_span = sp2;
 					let ident_str = ident.as_str();
 
 					match self.arg_names.iter().position(|arg_name| arg_name.as_slice() == ident_str)
@@ -138,15 +140,33 @@ impl TTMacroExpander for KWargHelper
 			initializer_tts.push(ast::TTTok(sp, token::LBRACE));
 
 			/* Collect tts until the next comma */
-			'next_arg_loop: loop
+			let mut found_any = false;
+			loop
 			{
 				match tts.cur_tt
 				{
-					Some(&ast::TTTok(_, token::COMMA)) => break,
-					Some(tt) => initializer_tts.push(tt.clone()),
+					Some(&ast::TTTok(sp, token::COMMA)) =>
+					{
+						if !found_any
+						{
+							cx.span_err(sp, "unexpected token: `,`");
+							return DummyResult::any(sp);
+						}
+						break;
+					}
+					Some(tt) =>
+					{
+						found_any = true;
+						initializer_tts.push(tt.clone());
+					}
 					None => break,
 				}
 				tts.bump();
+			}
+			if !found_any
+			{
+				cx.span_err(eq_span, "expected argument value after `=`");
+				return DummyResult::any(sp);
 			}
 
 			initializer_tts.push(ast::TTTok(sp, token::RBRACE));
