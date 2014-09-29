@@ -26,6 +26,16 @@ pub fn plugin_registrar(registrar: &mut Registry)
 	registrar.register_macro("kwarg_decl", kwarg_decl)
 }
 
+fn get_first_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
+{
+	match *tt
+	{
+		ast::TTTok(sp, _) => Some(sp),
+		ast::TTDelim(ref toks) => get_first_span_from_tt(&(**toks)[0]),
+		_ => None
+	}
+}
+
 #[deriving(Clone)]
 struct KWargHelper
 {
@@ -115,11 +125,11 @@ impl TTMacroExpander for KWargHelper
 						}
 					}
 				}
-				(Some(_), _) =>
+				(Some(tt), _) =>
 				{
 					if found_kwarg
 					{
-						cx.span_err(sp, "positional arguments must preceede keyword arguments");
+						cx.span_err(get_first_span_from_tt(tt).unwrap_or(sp), "positional arguments must preceede keyword arguments");
 						return DummyResult::any(sp);
 					}
 
