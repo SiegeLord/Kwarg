@@ -97,7 +97,11 @@ optional arguments.
 
 ### Via Cargo
 
-The package name is `kwarg`.
+```
+[dependencies.kwarg]
+
+git = "https://github.com/SiegeLord/Kwarg.git"
+```
 
 ## License
 
