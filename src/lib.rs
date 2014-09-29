@@ -159,7 +159,7 @@ impl TTMacroExpander for KWargHelper
 		/* Construct the call */
 		let mut arg_tts = vec![];
 		arg_tts.push(ast::TTTok(sp, token::LPAREN));
-		for (ii, tt) in arg_vals.move_iter().enumerate()
+		for (ii, tt) in arg_vals.into_iter().enumerate()
 		{
 			match tt
 			{
