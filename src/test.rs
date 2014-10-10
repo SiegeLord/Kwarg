@@ -25,6 +25,12 @@ fn baz()
 {
 }
 
+kwarg_decl!{baz2(a)}
+
+fn baz2(_a: ())
+{
+}
+
 #[test]
 fn test()
 {
@@ -39,4 +45,7 @@ fn test()
 	assert_eq!(ret, (6));
 
 	baz!()
+
+	let mut a = 1u;
+	baz2!(a = a = 1);
 } 
