@@ -46,6 +46,7 @@ fn test()
 
 	baz!()
 
-	let mut a = 1u;
-	baz2!(a = a = 1);
+	let mut a;
+	baz2!(a = a = 1u);
+	let _b = a;
 } 
