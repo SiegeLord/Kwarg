@@ -57,9 +57,9 @@ impl MacResult for KWargHelper
 	}
 }
 
-fn new_delim(sp: Span, token: token::Token) -> ast::Delimiter
+fn new_delimited(sp: Span, delim: token::DelimToken, tts: Vec<ast::TokenTree>) -> Rc<ast::Delimited>
 {
-	ast::Delimiter{ span: sp, token: token }
+	Rc::new(ast::Delimited{ delim: delim, open_span: sp, close_span: sp, tts: tts })
 }
 
 struct TTLookAhead<'l>
@@ -107,7 +107,7 @@ impl TTMacroExpander for KWargHelper
 			let mut eq_span = sp;
 			let arg_idx = match (tts.cur_tt, tts.next_tt)
 			{
-				(Some(&ast::TtToken(sp1, token::IDENT(ref ident, _))), Some(&ast::TtToken(sp2, token::EQ))) =>
+				(Some(&ast::TtToken(sp1, token::Ident(ref ident, _))), Some(&ast::TtToken(sp2, token::Eq))) =>
 				{
 					eq_span = sp2;
 					let ident_str = ident.as_str();
@@ -158,7 +158,7 @@ impl TTMacroExpander for KWargHelper
 			{
 				match tts.cur_tt
 				{
-					Some(&ast::TtToken(sp, token::COMMA)) =>
+					Some(&ast::TtToken(sp, token::Comma)) =>
 					{
 						if !found_any
 						{
@@ -182,9 +182,7 @@ impl TTMacroExpander for KWargHelper
 				return DummyResult::any(sp);
 			}
 
-			let delimited = (new_delim(sp, token::LBRACE), initializer_tts, new_delim(sp, token::RBRACE));
-
-			*arg_vals.get_mut(arg_idx) = Some(ast::TtDelimited(sp, Rc::new(delimited)));
+			arg_vals[arg_idx] = Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)));
 
 			tts.bump();
 		}
@@ -200,7 +198,7 @@ impl TTMacroExpander for KWargHelper
 					arg_tts.push(tt);
 					if ii < self.arg_names.len() - 1
 					{
-						arg_tts.push(ast::TtToken(sp, token::COMMA));
+						arg_tts.push(ast::TtToken(sp, token::Comma));
 					}
 				},
 				None =>
@@ -212,8 +210,8 @@ impl TTMacroExpander for KWargHelper
 		}
 
 		let mut call_tts = vec![];
-		call_tts.push(ast::TtToken(sp, token::IDENT(self.name.clone(), false)));
-		call_tts.push(ast::TtDelimited(sp, Rc::new((new_delim(sp, token::LPAREN), arg_tts, new_delim(sp, token::RPAREN)))));
+		call_tts.push(ast::TtToken(sp, token::Ident(self.name.clone(), token::Plain)));
+		call_tts.push(ast::TtDelimited(sp, new_delimited(sp, token::Paren, arg_tts)));
 		MacExpr::new(quote_expr!(cx, $call_tts))
 	}
 }
@@ -228,7 +226,7 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 		{
 			match *tok
 			{
-				token::IDENT(ref ident, _) => (ident.clone(), sp),
+				token::Ident(ref ident, _) => (ident.clone(), sp),
 				_ =>
 				{
 					cx.span_err(sp, "expected identifier as an argument");
@@ -255,16 +253,16 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 	{
 		Some(&ast::TtDelimited(_, ref tt_delim)) =>
 		{
-			let (ref delim, ref tts, _) = **tt_delim;
+			let ast::Delimited{ref delim, ref tts, ref open_span, ..} = **tt_delim;
 			let mut tts = tts.iter();
 			/* Skip the opening delim */
-			match delim.token
+			match *delim
 			{
-				token::LPAREN => (),
+				token::Paren => (),
 				_ =>
 				{
-					cx.span_err(delim.span, "expected '('");
-					return DummyResult::any(delim.span);
+					cx.span_err(*open_span, "expected '('");
+					return DummyResult::any(*open_span);
 				}
 			}
 
@@ -276,8 +274,8 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 					{
 						match *tok
 						{
-							token::IDENT(ref ident, _) => ident.name.as_str().to_string(),
-							token::RPAREN => break,
+							token::Ident(ref ident, _) => ident.name.as_str().to_string(),
+							token::CloseDelim(token::Paren) => break,
 							_ =>
 							{
 								cx.span_err(sp, "expected a sequence of `arg_name` or `arg_name = default_expr`");
@@ -300,7 +298,7 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 					{
 						match *tok
 						{
-							token::EQ =>
+							token::Eq =>
 							{
 								let mut initializer_tts = vec![];
 
@@ -308,8 +306,8 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 								{
 									match tts.next()
 									{
-										Some(&ast::TtToken(_, token::COMMA)) => break,
-										Some(&ast::TtToken(_, token::RPAREN)) | None =>
+										Some(&ast::TtToken(_, token::Comma)) => break,
+										Some(&ast::TtToken(_, token::CloseDelim(token::Paren))) | None =>
 										{
 											done = true;
 											break
@@ -317,10 +315,8 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 										Some(tt) => initializer_tts.push(tt.clone()),
 									}
 								}
-								
-								let delimited = (new_delim(sp, token::LBRACE), initializer_tts, new_delim(sp, token::RBRACE));
 
-								Some(ast::TtDelimited(sp, Rc::new(delimited)))
+								Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)))
 							},
 							_ => None
 						}
