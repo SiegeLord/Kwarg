@@ -16,7 +16,7 @@ use syntax::parse::token;
 use syntax::ptr::P;
 use rustc::plugin::Registry;
 
-use std::slice::Items;
+use std::slice::Iter;
 use std::rc::Rc;
 
 #[plugin_registrar]
@@ -64,14 +64,14 @@ fn new_delimited(sp: Span, delim: token::DelimToken, tts: Vec<ast::TokenTree>) -
 
 struct TTLookAhead<'l>
 {
-	tts: Items<'l, ast::TokenTree>,
+	tts: Iter<'l, ast::TokenTree>,
 	cur_tt: Option<&'l ast::TokenTree>,
 	next_tt: Option<&'l ast::TokenTree>,
 }
 
 impl<'l> TTLookAhead<'l>
 {
-	fn new(tts: Items<'l, ast::TokenTree>) -> TTLookAhead<'l>
+	fn new(tts: Iter<'l, ast::TokenTree>) -> TTLookAhead<'l>
 	{
 		let mut ret = TTLookAhead
 		{

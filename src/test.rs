@@ -44,7 +44,7 @@ fn test()
 	let ret = bar!(a = 1 + 5);
 	assert_eq!(ret, (6));
 
-	baz!()
+	baz!();
 
 	let mut a;
 	baz2!(a = a = 1u);
