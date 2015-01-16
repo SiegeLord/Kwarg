@@ -5,27 +5,27 @@
 #[plugin]
 extern crate kwarg_macros;
 
-kwarg_decl!{foo(a = 1, b = None, c = Some(6))}
+kwarg_decl! foo(a = 1, b = None, c = Some(6));
 
 fn foo(a: isize, b: Option<isize>, c: Option<isize>) -> (isize, Option<isize>, Option<isize>)
 {
 	(a, b, c)
 }
 
-kwarg_decl!{bar(a)}
+kwarg_decl! bar(a);
 
 fn bar(a: isize) -> isize
 {
 	a
 }
 
-kwarg_decl!{baz()}
+kwarg_decl! baz();
 
 fn baz()
 {
 }
 
-kwarg_decl!{baz2(a)}
+kwarg_decl! baz2(a);
 
 fn baz2(_a: ())
 {

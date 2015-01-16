@@ -12,12 +12,10 @@ extern crate rustc;
 
 use syntax::ast;
 use syntax::codemap::Span;
-use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, NormalTT, DummyResult, TTMacroExpander};
+use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, NormalTT, IdentTT, DummyResult, TTMacroExpander};
 use syntax::parse::token;
-use syntax::ptr::P;
-use syntax::util::small_vector::SmallVector;
-use syntax::ast::Item;
-use syntax::parse::token::{intern};
+use syntax::ast::Ident;
+use syntax::parse::token::intern;
 use rustc::plugin::Registry;
 
 use std::slice::Iter;
@@ -27,7 +25,7 @@ use std::rc::Rc;
 #[doc(hidden)]
 pub fn plugin_registrar(registrar: &mut Registry)
 {
-	registrar.register_macro("kwarg_decl", kwarg_decl)
+	registrar.register_syntax_extension(intern("kwarg_decl"), IdentTT(Box::new(kwarg_decl), None))
 }
 
 fn get_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
@@ -40,22 +38,12 @@ fn get_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
 	}
 }
 
-struct Dummy;
-
 #[derive(Clone)]
 struct KWargDecl
 {
 	name: ast::Ident,
 	arg_names: Vec<String>,
 	initializers: Vec<Option<ast::TokenTree>>
-}
-
-impl MacResult for Dummy
-{
-	fn make_items(self: Box<Dummy>) -> Option<SmallVector<P<Item>>>
-	{
-		Some(SmallVector::zero())
-	}
 }
 
 fn new_delimited(sp: Span, delim: token::DelimToken, tts: Vec<ast::TokenTree>) -> Rc<ast::Delimited>
@@ -217,137 +205,82 @@ impl TTMacroExpander for KWargDecl
 	}
 }
 
-fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResult+'static>
+fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult+'l>
 {
 	let mut tts = tts.iter();
-
-	let (name, name_span) = match tts.next()
-	{
-		Some(&ast::TtToken(sp, ref tok)) =>
-		{
-			match *tok
-			{
-				token::Ident(ref ident, _) => (ident.clone(), sp),
-				_ =>
-				{
-					cx.span_err(sp, "expected identifier as an argument");
-					return DummyResult::any(sp);
-				}
-			}
-		}
-		Some(tt) =>
-		{
-			cx.span_err(get_span_from_tt(tt).unwrap_or(sp), "expected identifier as an argument");
-			return DummyResult::any(sp);
-		}
-		_ =>
-		{
-			cx.span_err(sp, "expected identifier as an argument");
-			return DummyResult::any(sp);
-		}
-	};
 
 	let mut arg_names = vec![];
 	let mut initializers = vec![];
 
-	match tts.next()
+	loop
 	{
-		Some(&ast::TtDelimited(_, ref tt_delim)) =>
+		let arg_name = match tts.next()
 		{
-			let ast::Delimited{ref delim, ref tts, ref open_span, ..} = **tt_delim;
-			let mut tts = tts.iter();
-			/* Skip the opening delim */
-			match *delim
+			Some(&ast::TtToken(sp, ref tok)) =>
 			{
-				token::Paren => (),
-				_ =>
+				match *tok
 				{
-					cx.span_err(*open_span, "expected '('");
-					return DummyResult::any(*open_span);
-				}
-			}
-
-			loop
-			{
-				let arg_name = match tts.next()
-				{
-					Some(&ast::TtToken(sp, ref tok)) =>
+					token::Ident(ref ident, _) => ident.name.as_str().to_string(),
+					token::CloseDelim(token::Paren) => break,
+					_ =>
 					{
-						match *tok
-						{
-							token::Ident(ref ident, _) => ident.name.as_str().to_string(),
-							token::CloseDelim(token::Paren) => break,
-							_ =>
-							{
-								cx.span_err(sp, "expected a sequence of `arg_name` or `arg_name = default_expr`");
-								return DummyResult::any(sp);
-							}
-						}
-					}
-					Some(tt) =>
-					{
-						cx.span_err(get_span_from_tt(tt).unwrap_or(sp), "expected a sequence of `arg_name` or `arg_name = default_expr`");
+						cx.span_err(sp, "expected a sequence of `arg_name` or `arg_name = default_expr`");
 						return DummyResult::any(sp);
 					}
-					None => break
-				};
-
-				let mut done = false;
-				let initializer = match tts.next()
-				{
-					Some(&ast::TtToken(sp, ref tok)) =>
-					{
-						match *tok
-						{
-							token::Eq =>
-							{
-								let mut initializer_tts = vec![];
-
-								loop
-								{
-									match tts.next()
-									{
-										Some(&ast::TtToken(_, token::Comma)) => break,
-										Some(&ast::TtToken(_, token::CloseDelim(token::Paren))) | None =>
-										{
-											done = true;
-											break
-										}
-										Some(tt) => initializer_tts.push(tt.clone()),
-									}
-								}
-
-								Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)))
-							},
-							_ => None
-						}
-					}
-					_ => None
-				};
-
-				arg_names.push(arg_name);
-				initializers.push(initializer);
-				
-				if done
-				{
-					break;
 				}
 			}
-		}
-		Some(tt) =>
+			Some(tt) =>
+			{
+				cx.span_err(get_span_from_tt(tt).unwrap_or(sp), "expected a sequence of `arg_name` or `arg_name = default_expr`");
+				return DummyResult::any(sp);
+			}
+			None => break
+		};
+
+		let mut done = false;
+		let initializer = match tts.next()
 		{
-			cx.span_err(get_span_from_tt(tt).unwrap_or(sp), "expected a set of delimited arguments after the function name");
-			return DummyResult::any(sp);
-		}
-		_ =>
+			Some(&ast::TtToken(sp, ref tok)) =>
+			{
+				match *tok
+				{
+					token::Eq =>
+					{
+						let mut initializer_tts = vec![];
+
+						loop
+						{
+							match tts.next()
+							{
+								Some(&ast::TtToken(_, token::Comma)) => break,
+								Some(&ast::TtToken(_, token::CloseDelim(token::Paren))) | None =>
+								{
+									done = true;
+									break
+								}
+								Some(tt) => initializer_tts.push(tt.clone()),
+							}
+						}
+
+						Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)))
+					},
+					_ => None
+				}
+			}
+			_ => None
+		};
+
+		arg_names.push(arg_name);
+		initializers.push(initializer);
+
+		if done
 		{
-			cx.span_err(name_span, "expected a set of delimited arguments after the function name");
-			return DummyResult::any(sp);
+			break;
 		}
 	}
 
 	cx.syntax_env.insert(intern(name.as_str()),
 		NormalTT(Box::new(KWargDecl{ name: name, arg_names: arg_names, initializers: initializers }), None));
 
-	Box::new(Dummy)
+	return DummyResult::any(sp);
 }
