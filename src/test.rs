@@ -1,20 +1,20 @@
 // This file is released into the public domain.
 
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin)]
+#[plugin]
 extern crate kwarg_macros;
 
 kwarg_decl!{foo(a = 1, b = None, c = Some(6))}
 
-fn foo(a: int, b: Option<int>, c: Option<int>) -> (int, Option<int>, Option<int>)
+fn foo(a: isize, b: Option<isize>, c: Option<isize>) -> (isize, Option<isize>, Option<isize>)
 {
 	(a, b, c)
 }
 
 kwarg_decl!{bar(a)}
 
-fn bar(a: int) -> int
+fn bar(a: isize) -> isize
 {
 	a
 }
@@ -47,6 +47,6 @@ fn test()
 	baz!();
 
 	let mut a;
-	baz2!(a = a = 1u);
+	baz2!(a = a = 1us);
 	let _b = a;
 } 

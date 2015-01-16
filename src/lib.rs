@@ -4,16 +4,20 @@
 
 #![crate_name="kwarg_macros"]
 #![crate_type="dylib"]
-#![feature(quote, plugin_registrar, macro_rules)]
+#![feature(quote, plugin_registrar)]
+#![allow(unstable)]
 
 extern crate syntax;
 extern crate rustc;
 
 use syntax::ast;
 use syntax::codemap::Span;
-use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, MacroDef, NormalTT, DummyResult, TTMacroExpander};
+use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, NormalTT, DummyResult, TTMacroExpander};
 use syntax::parse::token;
 use syntax::ptr::P;
+use syntax::util::small_vector::SmallVector;
+use syntax::ast::Item;
+use syntax::parse::token::{intern};
 use rustc::plugin::Registry;
 
 use std::slice::Iter;
@@ -36,24 +40,21 @@ fn get_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
 	}
 }
 
-#[deriving(Clone)]
-struct KWargHelper
+struct Dummy;
+
+#[derive(Clone)]
+struct KWargDecl
 {
 	name: ast::Ident,
 	arg_names: Vec<String>,
 	initializers: Vec<Option<ast::TokenTree>>
 }
 
-impl MacResult for KWargHelper
+impl MacResult for Dummy
 {
-	fn make_def(&mut self) -> Option<MacroDef>
+	fn make_items(self: Box<Dummy>) -> Option<SmallVector<P<Item>>>
 	{
-		Some(MacroDef{ name: self.name.as_str().to_string(), ext: NormalTT(box self.clone(), None)})
-	}
-
-	fn make_stmt(self: Box<KWargHelper>) -> Option<P<ast::Stmt>>
-	{
-		None
+		Some(SmallVector::zero())
 	}
 }
 
@@ -92,7 +93,7 @@ impl<'l> TTLookAhead<'l>
 	}
 }
 
-impl TTMacroExpander for KWargHelper
+impl TTMacroExpander for KWargDecl
 {
 	fn expand<'l>(&self, cx: &'l mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResult+'l>
 	{
@@ -100,7 +101,7 @@ impl TTMacroExpander for KWargHelper
 
 		let mut tts = TTLookAhead::new(tts.iter());
 		let mut found_kwarg = false;
-		let mut pos_arg_idx = 0u;
+		let mut pos_arg_idx = 0us;
 
 		'arg_list_loop: loop
 		{
@@ -345,5 +346,8 @@ fn kwarg_decl(cx: &mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResu
 		}
 	}
 
-	box KWargHelper{ name: name, arg_names: arg_names, initializers: initializers }
+	cx.syntax_env.insert(intern(name.as_str()),
+		NormalTT(Box::new(KWargDecl{ name: name, arg_names: arg_names, initializers: initializers }), None));
+
+	Box::new(Dummy)
 }
