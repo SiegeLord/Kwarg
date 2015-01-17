@@ -10,14 +10,14 @@ wrappers around your functions which support keyword and default arguments.
 Within a single crate, using this macro is as easy as this:
 
 ```rust
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin)]
+#[plugin]
 extern crate kwarg_macros;
 
-kwarg_decl!{foo(a = 1, b = None, c = Some(6))}
+kwarg_decl! foo(a = 1, b = None, c = Some(6));
 
-fn foo(a: int, b: Option<int>, c: Option<int>) -> (int, Option<int>, Option<int>)
+fn foo(a: i32, b: Option<i32>, c: Option<i32>) -> (i32, Option<i32>, Option<i32>)
 {
 	(a, b, c)
 }
@@ -35,18 +35,16 @@ provide a macro that re-generates them and export it instead:
 `library`:
 
 ```rust
-#![feature(macro_rules)]
-
 #[macro_export]
 macro_rules! library_kwargs
 {
 	() =>
 	{
-		kwarg_decl!{foo(a = 1, b = None, c = Some(6))}
+		kwarg_decl! foo(a = 1, b = None, c = Some(6));
 	}
 }
 
-pub fn foo(a: int, b: Option<int>, c: Option<int>) -> (int, Option<int>, Option<int>)
+pub fn foo(a: i32, b: Option<i32>, c: Option<i32>) -> (i32, Option<i32>, Option<i32>)
 {
 	(a, b, c)
 }
@@ -55,14 +53,14 @@ pub fn foo(a: int, b: Option<int>, c: Option<int>) -> (int, Option<int>, Option<
 `application`:
 
 ```rust
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin)]
+#[plugin]
 extern crate kwarg_macros;
-#[phase(plugin, link)]
+#[macro_use]
 extern crate library;
 
-library_kwargs!()
+library_kwargs!();
 
 fn main()
 {
@@ -83,7 +81,7 @@ function_name '(' [required_arg_name | optional_arg_name '=' initializer_expr ],
 E.g.
 
 ```rust
-kwarg_decl!{function_name(req_arg1, req_arg2, opt_arg1 = 1, opt_arg2 = 2)}
+kwarg_decl! function_name(req_arg1, req_arg2, opt_arg1 = 1, opt_arg2 = 2);
 
 // ...
 
@@ -97,11 +95,7 @@ optional arguments.
 
 ### Via Cargo
 
-```
-[dependencies.kwarg_macros]
-
-git = "https://github.com/SiegeLord/Kwarg.git"
-```
+* [kwarg_macros](https://crates.io/crates/kwarg_macros)
 
 ## License
 
