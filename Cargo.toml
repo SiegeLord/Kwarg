@@ -2,7 +2,11 @@
 
 name = "kwarg_macros"
 version = "0.0.0"
+license = "LGPL-3.0"
+repository = "https://github.com/SiegeLord/KWarg"
+keywords = ["kwargs", "plugin"]
 authors = [ "SiegeLord <slabode@aim.com>" ]
+description = "Keyword argument plugin"
 
 [lib]
 
