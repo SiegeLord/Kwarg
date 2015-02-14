@@ -2,8 +2,7 @@
 
 #![feature(plugin)]
 
-#[plugin]
-extern crate kwarg_macros;
+#![plugin(kwarg_macros)]
 
 kwarg_decl! foo(a = 1, b = None, c = Some(6));
 

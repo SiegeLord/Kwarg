@@ -12,8 +12,7 @@ Within a single crate, using this macro is as easy as this:
 ```rust
 #![feature(plugin)]
 
-#[plugin]
-extern crate kwarg_macros;
+#![plugin(kwarg_macros)]
 
 kwarg_decl! foo(a = 1, b = None, c = Some(6));
 
@@ -55,8 +54,7 @@ pub fn foo(a: i32, b: Option<i32>, c: Option<i32>) -> (i32, Option<i32>, Option<
 ```rust
 #![feature(plugin)]
 
-#[plugin]
-extern crate kwarg_macros;
+#![plugin(kwarg_macros)]
 #[macro_use]
 extern crate library;
 

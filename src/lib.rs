@@ -5,7 +5,7 @@
 #![crate_name="kwarg_macros"]
 #![crate_type="dylib"]
 #![feature(quote, plugin_registrar)]
-#![allow(unstable)]
+#![feature(rustc_private)]
 
 extern crate syntax;
 extern crate rustc;
@@ -101,7 +101,7 @@ impl TTMacroExpander for KWargDecl
 					eq_span = sp2;
 					let ident_str = ident.as_str();
 
-					match self.arg_names.iter().position(|arg_name| arg_name.as_slice() == ident_str)
+					match self.arg_names.iter().position(|arg_name| &arg_name[] == ident_str)
 					{
 						Some(arg_idx) =>
 						{
@@ -129,7 +129,7 @@ impl TTMacroExpander for KWargDecl
 
 					if pos_arg_idx == self.arg_names.len()
 					{
-						cx.span_err(sp, format!("too many arguments passed to `{}` (expected {})", self.name.as_str(), self.arg_names.len()).as_slice());
+						cx.span_err(sp, &format!("too many arguments passed to `{}` (expected {})", self.name.as_str(), self.arg_names.len())[]);
 						return DummyResult::any(sp);
 					}
 
@@ -192,7 +192,7 @@ impl TTMacroExpander for KWargDecl
 				},
 				None =>
 				{
-					cx.span_err(sp, format!("argument `{}` is required, but not given a value", self.arg_names[ii]).as_slice());
+					cx.span_err(sp, &format!("argument `{}` is required, but not given a value", self.arg_names[ii])[]);
 					return DummyResult::any(sp);
 				}
 			}
