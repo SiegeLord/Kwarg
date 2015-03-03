@@ -46,6 +46,6 @@ fn test()
 	baz!();
 
 	let mut a;
-	baz2!(a = a = 1us);
+	baz2!(a = a = 1);
 	let _b = a;
 } 

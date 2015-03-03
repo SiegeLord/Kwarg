@@ -12,7 +12,7 @@ extern crate rustc;
 
 use syntax::ast;
 use syntax::codemap::Span;
-use syntax::ext::base::{ExtCtxt, MacResult, MacExpr, NormalTT, IdentTT, DummyResult, TTMacroExpander};
+use syntax::ext::base::{ExtCtxt, MacResult, MacEager, NormalTT, IdentTT, DummyResult, TTMacroExpander};
 use syntax::parse::token;
 use syntax::ast::Ident;
 use syntax::parse::token::intern;
@@ -89,7 +89,7 @@ impl TTMacroExpander for KWargDecl
 
 		let mut tts = TTLookAhead::new(tts.iter());
 		let mut found_kwarg = false;
-		let mut pos_arg_idx = 0us;
+		let mut pos_arg_idx = 0;
 
 		'arg_list_loop: loop
 		{
@@ -101,7 +101,7 @@ impl TTMacroExpander for KWargDecl
 					eq_span = sp2;
 					let ident_str = ident.as_str();
 
-					match self.arg_names.iter().position(|arg_name| &arg_name[] == ident_str)
+					match self.arg_names.iter().position(|arg_name| &arg_name[..] == ident_str)
 					{
 						Some(arg_idx) =>
 						{
@@ -129,7 +129,7 @@ impl TTMacroExpander for KWargDecl
 
 					if pos_arg_idx == self.arg_names.len()
 					{
-						cx.span_err(sp, &format!("too many arguments passed to `{}` (expected {})", self.name.as_str(), self.arg_names.len())[]);
+						cx.span_err(sp, &format!("too many arguments passed to `{}` (expected {})", self.name.as_str(), self.arg_names.len())[..]);
 						return DummyResult::any(sp);
 					}
 
@@ -192,7 +192,7 @@ impl TTMacroExpander for KWargDecl
 				},
 				None =>
 				{
-					cx.span_err(sp, &format!("argument `{}` is required, but not given a value", self.arg_names[ii])[]);
+					cx.span_err(sp, &format!("argument `{}` is required, but not given a value", self.arg_names[ii])[..]);
 					return DummyResult::any(sp);
 				}
 			}
@@ -201,7 +201,7 @@ impl TTMacroExpander for KWargDecl
 		let mut call_tts = vec![];
 		call_tts.push(ast::TtToken(sp, token::Ident(self.name.clone(), token::Plain)));
 		call_tts.push(ast::TtDelimited(sp, new_delimited(sp, token::Paren, arg_tts)));
-		MacExpr::new(quote_expr!(cx, $call_tts))
+		MacEager::expr(quote_expr!(cx, $call_tts))
 	}
 }
 
