@@ -25,7 +25,7 @@ use std::rc::Rc;
 #[doc(hidden)]
 pub fn plugin_registrar(registrar: &mut Registry)
 {
-	registrar.register_syntax_extension(intern("kwarg_decl"), IdentTT(Box::new(kwarg_decl), None))
+	registrar.register_syntax_extension(intern("kwarg_decl"), IdentTT(Box::new(kwarg_decl), None, true))
 }
 
 fn get_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
@@ -280,7 +280,7 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 	}
 
 	cx.syntax_env.insert(intern(name.as_str()),
-		NormalTT(Box::new(KWargDecl{ name: name, arg_names: arg_names, initializers: initializers }), None));
+		NormalTT(Box::new(KWargDecl{ name: name, arg_names: arg_names, initializers: initializers }), None, true));
 
 	return DummyResult::any(sp);
 }
