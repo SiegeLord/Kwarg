@@ -99,7 +99,7 @@ impl TTMacroExpander for KWargDecl
 				(Some(&ast::TtToken(sp1, token::Ident(ref ident, _))), Some(&ast::TtToken(sp2, token::Eq))) =>
 				{
 					eq_span = sp2;
-					let ident_str = ident.as_str();
+					let ident_str = ident.name.as_str();
 
 					match self.arg_names.iter().position(|arg_name| &arg_name[..] == ident_str)
 					{
@@ -129,7 +129,7 @@ impl TTMacroExpander for KWargDecl
 
 					if pos_arg_idx == self.arg_names.len()
 					{
-						cx.span_err(sp, &format!("too many arguments passed to `{}` (expected {})", self.name.as_str(), self.arg_names.len())[..]);
+						cx.span_err(sp, &format!("too many arguments passed to `{}` (expected {})", self.name.name.as_str(), self.arg_names.len())[..]);
 						return DummyResult::any(sp);
 					}
 
@@ -279,7 +279,7 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 		}
 	}
 
-	cx.syntax_env.insert(intern(name.as_str()),
+	cx.syntax_env.insert(name.name,
 		NormalTT(Box::new(KWargDecl{ name: name, arg_names: arg_names, initializers: initializers }), None, true));
 
 	return DummyResult::any(sp);

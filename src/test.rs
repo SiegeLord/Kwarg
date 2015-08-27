@@ -45,7 +45,8 @@ fn test()
 
 	baz!();
 
-	let mut a;
+	let a;
 	baz2!(a = a = 1);
 	let _b = a;
+	assert_eq!(a, 1);
 } 
