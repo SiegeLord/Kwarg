@@ -10,7 +10,7 @@
 extern crate syntax;
 extern crate rustc;
 
-use syntax::ast;
+use syntax::ast::{self, TokenTree};
 use syntax::codemap::Span;
 use syntax::ext::base::{ExtCtxt, MacResult, MacEager, NormalTT, IdentTT, DummyResult, TTMacroExpander};
 use syntax::parse::token;
@@ -28,12 +28,12 @@ pub fn plugin_registrar(registrar: &mut Registry)
 	registrar.register_syntax_extension(intern("kwarg_decl"), IdentTT(Box::new(kwarg_decl), None, true))
 }
 
-fn get_span_from_tt(tt: &ast::TokenTree) -> Option<Span>
+fn get_span_from_tt(tt: &TokenTree) -> Option<Span>
 {
 	match *tt
 	{
-		ast::TtToken(sp, _) => Some(sp),
-		ast::TtDelimited(sp, _) => Some(sp),
+		TokenTree::Token(sp, _) => Some(sp),
+		TokenTree::Delimited(sp, _) => Some(sp),
 		_ => None
 	}
 }
@@ -43,24 +43,24 @@ struct KWargDecl
 {
 	name: ast::Ident,
 	arg_names: Vec<String>,
-	initializers: Vec<Option<ast::TokenTree>>
+	initializers: Vec<Option<TokenTree>>
 }
 
-fn new_delimited(sp: Span, delim: token::DelimToken, tts: Vec<ast::TokenTree>) -> Rc<ast::Delimited>
+fn new_delimited(sp: Span, delim: token::DelimToken, tts: Vec<TokenTree>) -> Rc<ast::Delimited>
 {
 	Rc::new(ast::Delimited{ delim: delim, open_span: sp, close_span: sp, tts: tts })
 }
 
 struct TTLookAhead<'l>
 {
-	tts: Iter<'l, ast::TokenTree>,
-	cur_tt: Option<&'l ast::TokenTree>,
-	next_tt: Option<&'l ast::TokenTree>,
+	tts: Iter<'l, TokenTree>,
+	cur_tt: Option<&'l TokenTree>,
+	next_tt: Option<&'l TokenTree>,
 }
 
 impl<'l> TTLookAhead<'l>
 {
-	fn new(tts: Iter<'l, ast::TokenTree>) -> TTLookAhead<'l>
+	fn new(tts: Iter<'l, TokenTree>) -> TTLookAhead<'l>
 	{
 		let mut ret = TTLookAhead
 		{
@@ -73,7 +73,7 @@ impl<'l> TTLookAhead<'l>
 		ret
 	}
 
-	fn bump(&mut self) -> Option<&'l ast::TokenTree>
+	fn bump(&mut self) -> Option<&'l TokenTree>
 	{
 		self.cur_tt = self.next_tt;
 		self.next_tt = self.tts.next();
@@ -83,7 +83,7 @@ impl<'l> TTLookAhead<'l>
 
 impl TTMacroExpander for KWargDecl
 {
-	fn expand<'l>(&self, cx: &'l mut ExtCtxt, sp: Span, tts: &[ast::TokenTree]) -> Box<MacResult+'l>
+	fn expand<'l>(&self, cx: &'l mut ExtCtxt, sp: Span, tts: &[TokenTree]) -> Box<MacResult+'l>
 	{
 		let mut arg_vals = self.initializers.clone();
 
@@ -96,7 +96,7 @@ impl TTMacroExpander for KWargDecl
 			let mut eq_span = sp;
 			let arg_idx = match (tts.cur_tt, tts.next_tt)
 			{
-				(Some(&ast::TtToken(sp1, token::Ident(ref ident, _))), Some(&ast::TtToken(sp2, token::Eq))) =>
+				(Some(&TokenTree::Token(sp1, token::Ident(ref ident, _))), Some(&TokenTree::Token(sp2, token::Eq))) =>
 				{
 					eq_span = sp2;
 					let ident_str = ident.name.as_str();
@@ -147,7 +147,7 @@ impl TTMacroExpander for KWargDecl
 			{
 				match tts.cur_tt
 				{
-					Some(&ast::TtToken(sp, token::Comma)) =>
+					Some(&TokenTree::Token(sp, token::Comma)) =>
 					{
 						if !found_any
 						{
@@ -171,7 +171,7 @@ impl TTMacroExpander for KWargDecl
 				return DummyResult::any(sp);
 			}
 
-			arg_vals[arg_idx] = Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)));
+			arg_vals[arg_idx] = Some(TokenTree::Delimited(sp, new_delimited(sp, token::Brace, initializer_tts)));
 
 			tts.bump();
 		}
@@ -187,7 +187,7 @@ impl TTMacroExpander for KWargDecl
 					arg_tts.push(tt);
 					if ii < self.arg_names.len() - 1
 					{
-						arg_tts.push(ast::TtToken(sp, token::Comma));
+						arg_tts.push(TokenTree::Token(sp, token::Comma));
 					}
 				},
 				None =>
@@ -199,13 +199,13 @@ impl TTMacroExpander for KWargDecl
 		}
 
 		let mut call_tts = vec![];
-		call_tts.push(ast::TtToken(sp, token::Ident(self.name.clone(), token::Plain)));
-		call_tts.push(ast::TtDelimited(sp, new_delimited(sp, token::Paren, arg_tts)));
+		call_tts.push(TokenTree::Token(sp, token::Ident(self.name.clone(), token::Plain)));
+		call_tts.push(TokenTree::Delimited(sp, new_delimited(sp, token::Paren, arg_tts)));
 		MacEager::expr(quote_expr!(cx, $call_tts))
 	}
 }
 
-fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::TokenTree>) -> Box<MacResult+'l>
+fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<TokenTree>) -> Box<MacResult+'l>
 {
 	let mut tts = tts.iter();
 
@@ -216,7 +216,7 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 	{
 		let arg_name = match tts.next()
 		{
-			Some(&ast::TtToken(sp, ref tok)) =>
+			Some(&TokenTree::Token(sp, ref tok)) =>
 			{
 				match *tok
 				{
@@ -240,7 +240,7 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 		let mut done = false;
 		let initializer = match tts.next()
 		{
-			Some(&ast::TtToken(sp, ref tok)) =>
+			Some(&TokenTree::Token(sp, ref tok)) =>
 			{
 				match *tok
 				{
@@ -252,8 +252,8 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 						{
 							match tts.next()
 							{
-								Some(&ast::TtToken(_, token::Comma)) => break,
-								Some(&ast::TtToken(_, token::CloseDelim(token::Paren))) | None =>
+								Some(&TokenTree::Token(_, token::Comma)) => break,
+								Some(&TokenTree::Token(_, token::CloseDelim(token::Paren))) | None =>
 								{
 									done = true;
 									break
@@ -262,7 +262,7 @@ fn kwarg_decl<'l>(cx: &'l mut ExtCtxt, sp: Span, name: Ident, tts: Vec<ast::Toke
 							}
 						}
 
-						Some(ast::TtDelimited(sp, new_delimited(sp, token::Brace, initializer_tts)))
+						Some(TokenTree::Delimited(sp, new_delimited(sp, token::Brace, initializer_tts)))
 					},
 					_ => None
 				}
