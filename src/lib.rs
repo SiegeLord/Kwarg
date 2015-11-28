@@ -9,6 +9,7 @@
 
 extern crate syntax;
 extern crate rustc;
+extern crate rustc_plugin;
 
 use syntax::ast::{self, TokenTree};
 use syntax::codemap::Span;
@@ -16,7 +17,7 @@ use syntax::ext::base::{ExtCtxt, MacResult, MacEager, NormalTT, IdentTT, DummyRe
 use syntax::parse::token;
 use syntax::ast::Ident;
 use syntax::parse::token::intern;
-use rustc::plugin::Registry;
+use rustc_plugin::Registry;
 
 use std::slice::Iter;
 use std::rc::Rc;
